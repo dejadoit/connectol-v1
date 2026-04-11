@@ -153,6 +153,7 @@ export default function ProjectClient({ project, docs, workspaceEntries }: any) 
                         </span>
                         <span>{new Date(activeDoc.updated_at).toLocaleString()}</span>
                      </div>
+                     )}
                    </div>
                 ) : (
                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
