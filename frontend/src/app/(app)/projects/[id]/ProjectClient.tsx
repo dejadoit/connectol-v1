@@ -84,6 +84,9 @@ export default function ProjectClient({ project, docs, workspaceEntries }: any) 
                Code Repository
              </a>
            )}
+           <button onClick={() => router.push(`/projects/${project.id}/connect`)} className="text-sm font-bold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors px-3 py-1.5 rounded flex items-center gap-1.5 shadow-sm">
+             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Connect AI
+           </button>
            <button onClick={() => router.push(`/projects/${project.id}/keys`)} className="text-sm font-semibold bg-gray-100 text-gray-700 border hover:bg-gray-200 transition-colors px-3 py-1.5 rounded">
              Settings & API Keys
            </button>
@@ -196,7 +199,14 @@ export default function ProjectClient({ project, docs, workspaceEntries }: any) 
                            <div className={`w-2 h-2 rounded-full ${entry.created_by_type === 'agent' ? 'bg-[#466370]' : 'bg-green-500'}`} />
                            <span className="font-bold text-sm text-gray-800">{entry.created_by_label}</span>
                            {entry.created_by_type === 'agent' && (
-                             <span className="text-[9px] uppercase font-bold text-[#466370] bg-blue-50 px-1 py-0.5 rounded border border-blue-100">{entry.agent_name}</span>
+                             <span className="text-[9px] uppercase font-bold text-[#466370] bg-blue-50 px-1 py-0.5 rounded border border-blue-100">
+                               {entry.agent_name}
+                             </span>
+                           )}
+                           {entry.metadata?.source && (
+                             <span className="text-[9px] uppercase font-bold text-purple-700 bg-purple-50 px-1 py-0.5 rounded border border-purple-100 shadow-sm" title={`Origin Model: ${entry.metadata.model || 'Unknown'}`}>
+                               {entry.metadata.model || 'API Integration'}
+                             </span>
                            )}
                         </div>
                         <span className="text-[10px] font-mono text-gray-400">{new Date(entry.created_at).toLocaleDateString()}</span>

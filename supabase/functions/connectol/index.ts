@@ -8,6 +8,7 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
 };
 
 /**
@@ -24,10 +25,10 @@ async function authenticateRequest(request: Request) {
         global: { headers: { Authorization: authHeader } }
     });
     
-    const { data: { user }, error } = await userClient.auth.getUser();
-    if (error || !user) throw new Error("Unauthorized Human JWT");
+    const { data: { user }, error } = await userClient.auth.getUser(rawKey);
+    if (error || !user) throw new Error("Unauthorized Human JWT: " + (error?.message || "No user found"));
 
-    return { type: "human", client: userClient, user };
+    return { type: "user", client: userClient, user };
   } else {
     // Agent API Key path
     const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -57,7 +58,8 @@ Deno.serve(async (req) => {
   
   try {
     const url = new URL(req.url);
-    const path = url.pathname.replace('/connectol', '');
+    const projectIndex = url.pathname.indexOf('/projects');
+    const path = projectIndex !== -1 ? url.pathname.substring(projectIndex) : url.pathname;
     
     let authContext;
     try {
@@ -127,6 +129,7 @@ Deno.serve(async (req) => {
          confidence: row.confidence,
          status: row.status,
          created_at: row.created_at,
+         metadata: row.metadata,
          content: isCompact ? undefined : row.content
       }));
 
@@ -266,7 +269,8 @@ Deno.serve(async (req) => {
           related_doc_id: body.related_doc_id,
           created_by_type: type,
           created_by_id: type === "agent" ? key.id : user!.id,
-          created_by_label: createdByLabel
+          created_by_label: createdByLabel,
+          metadata: body.metadata || {}
         };
 
         const { data, error } = await supabase.from("workspace_entries").insert(payload).select().single();
