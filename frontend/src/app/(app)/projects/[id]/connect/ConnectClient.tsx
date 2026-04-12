@@ -25,6 +25,8 @@ When requested to verify something, read logic, or capture an idea:
    }
 `;
 
+  const testPrompt = `List my available Connectol projects. Review the list, select the one you find most interesting, fetch its context, and then draft a quick suggestion into its Workspace Inbox titled "First Setup Test Run".`;
+
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
     setCopiedType(type);
@@ -33,14 +35,34 @@ When requested to verify something, read logic, or capture an idea:
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-6">
-      <div className="mb-8">
+      
+      {/* 1. Explaining the Loop & Connectol */}
+      <div className="mb-4">
         <button onClick={() => router.push(`/projects/${project.id}`)} className="text-sm font-semibold text-gray-500 hover:text-gray-900 mb-4 inline-flex items-center gap-1">
           ← Back to Project
         </button>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Connect AI Ecosystem</h1>
         <p className="text-gray-600 text-lg">
-          Integrate external reasoning models like ChatGPT or Claude directly into the global Connectol memory loop. 
+          Integrate external reasoning models directly into your Connectol memory loop. 
         </p>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-100 rounded-lg p-5 mb-8 text-blue-900 shadow-sm flex items-start gap-4">
+        <div className="text-2xl pt-1">🧠</div>
+        <div>
+           <h3 className="font-bold text-lg mb-1">The Shared Memory Loop</h3>
+           <ul className="list-disc pl-5 space-y-1 text-sm text-blue-800">
+               <li><strong>Connectol</strong> is the shared source of truth.</li>
+               <li><strong>AI reads</strong> pure canonical context without massive copy-pasting.</li>
+               <li><strong>AI writes</strong> draft outputs straight into your Workspace Inbox.</li>
+               <li><strong>Humans review</strong> and promote raw drafts into canonical permanent truth.</li>
+           </ul>
+        </div>
+      </div>
+
+      {/* Explicit Limitations Clause */}
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8 text-sm text-yellow-900">
+          <strong>Setup Limitations:</strong> There is no "magic 1-click" integration. Connecting an AI like ChatGPT requires manual copy-pasting to build a Custom GPT securely behind your keys. This is operator-first memory; humans will ALWAYS need to manually review and promote the automated drafts inside the Workspace.
       </div>
 
       <div className="flex border-b mb-6">
@@ -59,41 +81,85 @@ When requested to verify something, read logic, or capture an idea:
       </div>
 
       {activeTab === 'chatgpt' && (
-        <div className="space-y-6">
-            <div className="bg-white border rounded-xl shadow-sm p-6">
-                <h2 className="font-bold text-gray-800 text-lg mb-4">1. Import the Generic OpenAPI Schema</h2>
-                <p className="text-sm text-gray-600 mb-4">Create a generic Custom GPT inside your OpenAI account. Under the <strong>Actions</strong> tab, click "Import from URL" and paste the centralized OpenAPI specification below. This single schema dynamically spans all your authorized projects.</p>
-                <div className="flex items-center gap-4">
-                    <input type="text" readOnly value={openApiUrl} className="flex-1 bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-sm font-mono text-gray-800" />
-                    <button onClick={() => copyToClipboard(openApiUrl, 'url')} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded font-medium text-sm transition-colors w-32 border">
+        <div className="space-y-6 relative">
+            <div className="absolute left-6 top-8 bottom-4 w-0.5 bg-gray-200 z-0 hidden sm:block"></div>
+            
+            <div className="relative z-10 bg-white border rounded-xl shadow-sm p-6 ml-0 sm:ml-12 border-l-4 border-l-[#466370]">
+                <h2 className="font-bold text-gray-800 text-lg mb-2">Step 1: Generate an Agent Key</h2>
+                <p className="text-sm text-gray-600">Navigate to the <a href={`/projects/${project.id}/keys`} target="_blank" className="text-blue-600 font-semibold hover:underline">API Keys Hub</a> and generate a new key for this Agent. Copy it immediately to your clipboard.</p>
+            </div>
+
+            <div className="relative z-10 bg-white border rounded-xl shadow-sm p-6 ml-0 sm:ml-12 border-l-4 border-l-[#466370]">
+                <h2 className="font-bold text-gray-800 text-lg mb-2">Step 2: Create a Custom GPT</h2>
+                <p className="text-sm text-gray-600">Open ChatGPT and navigate to <strong>Explore GPTs ▸ Create</strong>. Give your GPT a name like <em>"Connectol Hub"</em>.</p>
+            </div>
+
+            <div className="relative z-10 bg-white border rounded-xl shadow-sm p-6 ml-0 sm:ml-12 border-l-4 border-l-[#466370]">
+                <div className="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 className="font-bold text-gray-800 text-lg">Step 3: Import the OpenAPI Schema</h2>
+                        <p className="text-sm text-gray-600">Under the <strong>Actions</strong> tab, click <em>Import from URL</em> and paste this exact link.</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-4 bg-gray-50 border p-2 rounded-lg">
+                    <input type="text" readOnly value={openApiUrl} className="flex-1 bg-transparent px-2 text-sm font-mono text-gray-800 focus:outline-none" />
+                    <button onClick={() => copyToClipboard(openApiUrl, 'url')} className="px-4 py-2 bg-white border shadow-sm hover:bg-gray-50 text-gray-800 rounded font-medium text-sm transition-colors w-32 shrink-0">
                         {copiedType === 'url' ? 'Copied!' : 'Copy URL'}
                     </button>
                 </div>
             </div>
 
-            <div className="bg-white border rounded-xl shadow-sm p-6">
-                <h2 className="font-bold text-gray-800 text-lg mb-4">2. Map your Global Base Authentication</h2>
-                <p className="text-sm text-gray-600 mb-2">Within the Action configuration in ChatGPT, click <strong>Authentication ▸ API Key</strong>. Set the Auth Type to Bearer.</p>
-                <p className="text-sm text-gray-600">You must use a Global Connectol Agent key. Create one natively from the <a href={`/projects/${project.id}/keys`} className="text-blue-600 font-semibold hover:underline">API Keys Hub</a> and securely paste it into ChatGPT.</p>
+            <div className="relative z-10 bg-white border rounded-xl shadow-sm p-6 ml-0 sm:ml-12 border-l-4 border-l-[#466370]">
+                <h2 className="font-bold text-gray-800 text-lg mb-2">Step 4: Lock Down Authorization</h2>
+                <p className="text-sm text-gray-600">In the Actions pane, click the gear next to <strong>Authentication</strong>. Set the Type to <strong>API Key</strong>, Auth Type to <strong>Bearer</strong>, and paste the Connectol Key you copied in Step 1.</p>
             </div>
 
-            <div className="bg-white border rounded-xl shadow-sm overflow-hidden mb-8">
-                <div className="border-b px-6 py-4 bg-gray-50 flex items-center justify-between">
-                <div>
-                    <h2 className="font-bold text-gray-800 text-lg">3. Base System Prompt</h2>
-                    <p className="text-sm text-gray-500 mt-1">Paste this globally generic block directly into the overall GPT definition to anchor structural tracking metadata.</p>
+            <div className="relative z-10 bg-white border rounded-xl shadow-sm p-6 ml-0 sm:ml-12 border-l-4 border-l-[#466370]">
+                <div className="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 className="font-bold text-gray-800 text-lg">Step 5: Paste System Constraints</h2>
+                        <p className="text-sm text-gray-600">Back in the main Configure tab, paste these exact rules into the <strong>Instructions</strong> box so the GPT handles memory natively.</p>
+                    </div>
+                    <button 
+                        onClick={() => copyToClipboard(chatGptInstructions, 'prompt')}
+                        className={`px-4 py-2 rounded shrink-0 font-bold text-sm transition-colors ${copiedType === 'prompt' ? 'bg-green-100 text-green-700' : 'bg-[#466370] text-white hover:bg-opacity-90'}`}
+                    >
+                        {copiedType === 'prompt' ? 'Copied!' : 'Copy Rules'}
+                    </button>
                 </div>
-                <button 
-                    onClick={() => copyToClipboard(chatGptInstructions, 'prompt')}
-                    className={`px-4 py-2 rounded font-bold text-sm transition-colors ${copiedType === 'prompt' ? 'bg-green-100 text-green-700' : 'bg-[#466370] text-white hover:bg-opacity-90'}`}
-                >
-                    {copiedType === 'prompt' ? 'Copied!' : 'Copy Prompt'}
-                </button>
+                
+                {/* Multi-Project Caveat Panel embedded right below rules */}
+                <div className="bg-gray-100 p-4 border rounded-md mb-4 text-xs text-gray-700 border-gray-200 flex items-start gap-3">
+                    <div className="text-lg">🌍</div>
+                    <div>
+                        <strong className="block mb-1 text-gray-900">How Project Targeting Works:</strong>
+                        This rule block does NOT hardcode an ID! Because you provided a generic OpenAPI spec, this Custom GPT spans ALL your authorized projects natively. It actively queries Connectol to figure out what projects you have during the chat session.
+                    </div>
                 </div>
-                <div className="p-6 bg-gray-900 text-gray-100 font-mono text-sm whitespace-pre-wrap overflow-x-auto">
-                {chatGptInstructions}
+
+                <div className="p-4 bg-gray-900 text-gray-100 rounded-md font-mono text-xs whitespace-pre-wrap overflow-x-auto">
+                    {chatGptInstructions}
                 </div>
             </div>
+
+            <div className="relative z-10 bg-white border rounded-xl shadow-sm p-6 ml-0 sm:ml-12 border-l-4 border-l-green-600">
+                <div className="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 className="font-bold text-green-800 text-lg">Step 6: Run Your First Test</h2>
+                        <p className="text-sm text-gray-600">Save the GPT. Open a new chat window with it, and paste this exact command to test the read/write circuit!</p>
+                    </div>
+                    <button 
+                        onClick={() => copyToClipboard(testPrompt, 'test')}
+                        className={`px-3 py-1.5 rounded shrink-0 font-bold text-xs transition-colors border ${copiedType === 'test' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'}`}
+                    >
+                        {copiedType === 'test' ? 'Copied!' : 'Copy Prompt'}
+                    </button>
+                </div>
+                <div className="p-4 bg-green-50 border border-green-100 rounded-md text-green-900 text-sm font-medium italic">
+                    "{testPrompt}"
+                </div>
+            </div>
+
         </div>
       )}
     </div>
