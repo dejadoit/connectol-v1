@@ -31,7 +31,7 @@ export default function PromotionView({ project, entry, docs, onBack }: any) {
         body: JSON.stringify({
           entry_id: entry.id,
           target_doc_id: targetDocId,
-          mode,
+          merge_mode: mode,
           change_summary: changeSummary
         })
       });

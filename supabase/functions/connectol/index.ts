@@ -398,7 +398,7 @@ Deno.serve(async (req) => {
 
       const body = await req.json();
       const entryId = body.entry_id;
-      const mergeMode = body.merge_mode || "replace";
+      const mergeMode = body.merge_mode || body.mode || "replace";
       const changeSummary = body.change_summary;
       
       const { data: wEntry, error: wErr } = await supabase.from("workspace_entries").select("*").eq("id", entryId).eq("project_id", projectId).single();
