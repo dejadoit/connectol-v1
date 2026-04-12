@@ -131,18 +131,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify(spec), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (url.pathname.endsWith('/create-test-key')) {
-        const serviceClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-        const { data: proj } = await serviceClient.from('projects').select('*').limit(1).single();
-        const rawKey = "agnt_" + crypto.randomUUID().replace(/-/g, '');
-        const encoder = new TextEncoder();
-        const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(rawKey));
-        const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-        await serviceClient.from('api_keys').insert({
-            org_id: proj.org_id, name: 'temp test', key_hash: hashHex, agent_name: 'bot', allowed_project_ids: []
-        });
-        return new Response(rawKey, { status: 200, headers: corsHeaders });
-    }
+
 
     let authContext;
     try {
