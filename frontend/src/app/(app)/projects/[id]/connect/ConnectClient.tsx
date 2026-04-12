@@ -59,7 +59,7 @@ Instead of just outputting massive text blocks that humans have to manually copy
           </div>
           <button 
             onClick={copyToClipboard}
-            className={\`px-4 py-2 rounded font-bold text-sm transition-colors \${copied ? 'bg-green-100 text-green-700' : 'bg-[#466370] text-white hover:bg-opacity-90'}\`}
+            className={`px-4 py-2 rounded font-bold text-sm transition-colors ${copied ? 'bg-green-100 text-green-700' : 'bg-[#466370] text-white hover:bg-opacity-90'}`}
           >
             {copied ? 'Copied!' : 'Copy Integration Block'}
           </button>
@@ -76,11 +76,11 @@ Instead of just outputting massive text blocks that humans have to manually copy
         </div>
         <div className="bg-white border p-5 rounded-lg shadow-sm">
            <h3 className="font-bold text-gray-800 mb-2 border-b pb-2">2. Authentication</h3>
-           <p className="text-sm text-gray-600">Generate an API Key for the Agent in the <a href={\`/projects/\${project.id}/keys\`} className="text-blue-600 hover:underline">Settings</a>. Inject it as a Bearer token in the API requests.</p>
+           <p className="text-sm text-gray-600">Generate an API Key for the Agent in the <a href={`/projects/${project.id}/keys`} className="text-blue-600 hover:underline">Settings</a>. Inject it as a Bearer token in the API requests.</p>
         </div>
         <div className="bg-white border p-5 rounded-lg shadow-sm">
            <h3 className="font-bold text-gray-800 mb-2 border-b pb-2">3. Visibility Tracing</h3>
-           <p className="text-sm text-gray-600">Using the \`metadata\` block ensures the inbox transparently renders which model or bot authored the draft proposal.</p>
+           <p className="text-sm text-gray-600">Using the `metadata` block ensures the inbox transparently renders which model or bot authored the draft proposal.</p>
         </div>
       </div>
     </div>
