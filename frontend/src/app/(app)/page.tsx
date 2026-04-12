@@ -1,6 +1,8 @@
 import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
 
+import EmptyDashboard from '@/components/EmptyDashboard';
+
 export default async function AppDashboard() {
   const supabase = await createClient();
   const { data: projects } = await supabase.from('projects').select('*');
@@ -9,7 +11,7 @@ export default async function AppDashboard() {
     <div className="p-8 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6 text-[#5f5e5e]">Connectol Workspace</h1>
       <div className="grid gap-4">
-        {(!projects || projects.length === 0) && <p className="text-gray-500">No projects found. Ensure permissions are granted via your organization.</p>}
+        {(!projects || projects.length === 0) && <EmptyDashboard />}
         {projects?.map(p => (
            <Link key={p.id} href={`/projects/${p.id}`} className="block p-5 bg-white border rounded shadow-sm hover:border-[#466370]">
               <div className="flex justify-between items-center mb-1">

@@ -90,6 +90,10 @@ export default function ProjectClient({ project, docs, workspaceEntries }: any) 
          </div>
        </div>
 
+       <div className="bg-blue-50 border-b px-8 py-2 text-xs text-blue-800 flex items-center justify-center shrink-0">
+         <span className="font-semibold mr-1">How it works:</span> Left side = official Canonical Truth. Right side = incoming AI/human Workspace Inbox. Review and promote useful items into truth.
+       </div>
+
        <div className="flex flex-1 overflow-hidden">
           {/* Canonical Truth Context Pane */}
           <div className="flex-1 flex flex-col border-r bg-white overflow-hidden">
@@ -157,7 +161,7 @@ export default function ProjectClient({ project, docs, workspaceEntries }: any) 
                    </div>
                 ) : (
                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                      <p className="mb-2">Document context is empty.</p>
+                      <p className="mb-2">Canonical Truth is empty.</p>
                       <p className="text-sm">Human operators may write truth blocks to kickstart alignment.</p>
                    </div>
                 )}
@@ -168,7 +172,7 @@ export default function ProjectClient({ project, docs, workspaceEntries }: any) 
           <div className="w-[450px] shrink-0 flex flex-col bg-[#f8f9fa] border-l border-white shadow-[-4px_0_24px_-12px_rgba(0,0,0,0.05)]">
              <div className="px-6 py-4 border-b bg-white flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
-                   <h3 className="font-bold text-sm text-gray-700 uppercase tracking-wide">Workspace Stream</h3>
+                   <h3 className="font-bold text-sm text-gray-700 uppercase tracking-wide">Workspace Inbox</h3>
                    <span className="text-[10px] bg-green-50 text-green-700 border border-green-200 px-1.5 py-0.5 rounded-full font-bold">{activeEntries.length} Live</span>
                 </div>
                 {rejectedEntries.length > 0 && (
@@ -180,8 +184,9 @@ export default function ProjectClient({ project, docs, workspaceEntries }: any) 
              
              <div className="flex-1 overflow-auto p-4 space-y-4">
                {displayEntries.length === 0 && (
-                 <div className="text-center text-sm text-gray-500 bg-white border border-dashed rounded-lg p-8 mt-4">
-                    The workspace pipeline is currently quiet.
+                 <div className="text-center text-sm text-gray-500 bg-white border border-dashed rounded-lg p-5 mt-4 mx-2">
+                    <p className="font-semibold text-gray-700 mb-2">Workspace Inbox is currently empty.</p>
+                    <p className="text-xs leading-relaxed">When human operators or AI agents write drafts, suggestions, or experiments, they will appear here waiting for your review. Promote them to move useful work into the Canonical Truth.</p>
                  </div>
                )}
                {displayEntries.map((entry: any) => (
