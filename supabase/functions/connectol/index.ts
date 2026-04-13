@@ -217,7 +217,7 @@ Deno.serve(async (req) => {
               document_id: docId,
               version: oldDoc.version,
               content: oldDoc.content,
-              changed_by_type: type,
+              changed_by_type: type === "agent" ? "agent" : "user",
               changed_by_id: user!.id,
               changed_by_label: user?.email?.split('@')[0] || "Unknown User",
               change_summary: body.change_summary || "Direct manual UI edit"
@@ -228,7 +228,7 @@ Deno.serve(async (req) => {
              title: body.title !== undefined ? body.title : oldDoc.title,
              summary: body.summary !== undefined ? body.summary : oldDoc.summary,
              version: nextVersion,
-             last_updated_by_type: type,
+             last_updated_by_type: type === "agent" ? "agent" : "user",
              last_updated_by_id: user!.id,
              last_updated_by_label: user?.email?.split('@')[0] || "Unknown User",
              updated_at: new Date().toISOString()
@@ -286,7 +286,7 @@ Deno.serve(async (req) => {
         let createdByLabel = "";
         let agentName = "";
         
-        if (type === "agent") {
+        if (type === "agent" || type === "personal") {
             agentName = key.agent_name;
             createdByLabel = key.name;
         } else {
@@ -294,18 +294,34 @@ Deno.serve(async (req) => {
             createdByLabel = user?.email?.split('@')[0] || "Unknown User"; 
         }
 
+        let requestedType = body.entry_type || "note";
+        let safeType = requestedType;
+        const metadata = body.metadata || {};
+        
+        // Handle unmigrated missing v3 enums on hosted Supabase gracefully
+        const missingEnums: Record<string, string> = {
+            'summary': 'analysis',
+            'decision': 'suggestion',
+            'snippet': 'note',
+            'issue': 'experiment'
+        };
+        if (missingEnums[requestedType]) {
+            safeType = missingEnums[requestedType];
+            metadata.v3_type = requestedType; // Preserve for frontend rendering
+        }
+
         const payload = {
           project_id: projectId,
           agent_name: agentName,
-          entry_type: body.entry_type || "note",
+          entry_type: safeType,
           title: body.title,
           content: body.content,
           confidence: body.confidence || "medium",
           related_doc_id: body.related_doc_id,
-          created_by_type: type,
+          created_by_type: type === "agent" ? "agent" : "user",
           created_by_id: type === "agent" ? key.id : user!.id,
           created_by_label: createdByLabel,
-          metadata: body.metadata || {}
+          metadata: metadata
         };
 
         const { data, error } = await supabase.from("workspace_entries").insert(payload).select().single();
@@ -375,7 +391,7 @@ Deno.serve(async (req) => {
           const { error: updateErr } = await supabase.from("canonical_documents").update({
               content: finalContent,
               version: nextVersion,
-              last_updated_by_type: type,
+              last_updated_by_type: type === "agent" ? "agent" : "user",
               last_updated_by_id: type === "agent" ? key.id : user!.id,
               last_updated_by_label: type === "agent" ? key.name : (user?.email?.split('@')[0] || "Unknown User"),
               updated_at: new Date().toISOString()
@@ -388,7 +404,7 @@ Deno.serve(async (req) => {
              title: wEntry.title,
              content: wEntry.content,
              version: 1,
-             last_updated_by_type: type,
+             last_updated_by_type: type === "agent" ? "agent" : "user",
              last_updated_by_id: type === "agent" ? key.id : user!.id,
              last_updated_by_label: type === "agent" ? key.name : (user?.email?.split('@')[0] || "Unknown User")
          }).select("id").single();

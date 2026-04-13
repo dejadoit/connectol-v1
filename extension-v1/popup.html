@@ -25,12 +25,15 @@
         </div>
       </div>
 
-      <div class="action-box">
-        <button id="btn-pull-context" class="btn btn-primary">
-          <span class="icon">⭳</span> Pull Context to Clipboard
+      <div class="action-box" style="display: flex; gap: 8px; margin-bottom: 5px;">
+        <button id="btn-pull-context" class="btn btn-primary" style="flex: 1; padding: 10px 5px; font-size: 13px;">
+          <span class="icon">⭳</span> Inject Context
         </button>
-        <div id="context-status" class="status-msg"></div>
+        <button id="btn-inject-handover" class="btn btn-primary" style="flex: 1; padding: 10px 5px; font-size: 13px;">
+          <span class="icon">⭳</span> Inject Handover
+        </button>
       </div>
+      <div id="context-status" class="status-msg"></div>
 
       <hr class="divider">
 
@@ -45,11 +48,12 @@
           <label for="entry-type">Type</label>
           <div class="select-wrapper">
             <select id="entry-type">
+              <option value="summary" selected>Summary</option>
               <option value="decision">Decision</option>
               <option value="snippet">Snippet</option>
-              <option value="summary">Summary</option>
               <option value="plan">Plan</option>
               <option value="issue">Issue</option>
+              <option value="handover">Handover</option>
             </select>
           </div>
         </div>

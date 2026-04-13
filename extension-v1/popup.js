@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const dropdownProject = document.getElementById('project-select');
   
   const btnPullContext = document.getElementById('btn-pull-context');
+  const btnInjectHandover = document.getElementById('btn-inject-handover');
   const btnCapture = document.getElementById('btn-capture');
   
   // State
@@ -22,6 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     showView('settings');
   } else {
     loadProjects();
+    prefillCapture();
   }
   
   // Handlers
@@ -62,10 +64,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
   
-  btnPullContext.addEventListener('click', pullContext);
+  btnPullContext.addEventListener('click', () => pullContext(false));
+  btnInjectHandover.addEventListener('click', () => pullContext(true));
   btnCapture.addEventListener('click', captureOutput);
 
   // --- Logic Functions ---
+
+  async function prefillCapture() {
+    try {
+      const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
+      if (!tab.url.includes('chatgpt.com') && !tab.url.includes('claude.ai')) return;
+      
+      chrome.tabs.sendMessage(tab.id, { action: 'EXTRACT_OUTPUT' }, (res) => {
+         if (res && res.success && res.data) {
+            const titleBox = document.getElementById('entry-title');
+            const typeBox = document.getElementById('entry-type');
+            if (!titleBox.value && res.data.bestTitle) titleBox.value = res.data.bestTitle;
+            if (res.data.bestType) typeBox.value = res.data.bestType;
+         }
+      });
+    } catch(e) {}
+  }
 
   function showView(viewId) {
     elViewMain.classList.remove('active');
@@ -116,19 +135,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  function pullContext() {
+  function pullContext(isHandover = false) {
     if (!config.activeProjectId) {
       showStatus('context-status', 'Select a project first', 'error');
       return;
     }
     
     btnPullContext.disabled = true;
+    btnInjectHandover.disabled = true;
     showStatus('context-status', 'Pulling...', '');
     
     chrome.runtime.sendMessage(
       { action: 'GET_CONTEXT', projectId: config.activeProjectId }, 
       (response) => {
         btnPullContext.disabled = false;
+        btnInjectHandover.disabled = false;
         
         if (chrome.runtime.lastError || !response.success) {
           showStatus('context-status', 'Failed to fetch context', 'error');
@@ -136,13 +157,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         let contextStr = '';
+        const handoverPrefix = `[SYSTEM INSTRUCTION: SMART HANDOVER SESSION START]\nThis is a session continuation (Handover). Please review the context below. Aim to move the work forward.\n\n---\n\n`;
+        
         if (typeof response.data === 'string') {
-           contextStr = response.data;
+           contextStr = isHandover ? handoverPrefix + response.data : response.data;
         } else if (response.data.markdown) {
-           contextStr = response.data.markdown;
+           contextStr = isHandover ? handoverPrefix + response.data.markdown : response.data.markdown;
         } else {
            const d = response.data;
-           contextStr = `# Project: ${d.project?.name || 'Unknown'}\n`;
+           if (isHandover) {
+              contextStr += `[SYSTEM INSTRUCTION: SMART HANDOVER SESSION START]\n`;
+              contextStr += `You are assuming the role of an AI operator working on the project "${d.project?.name || 'Unknown'}".\n`;
+              contextStr += `This is a session continuation (Handover) brief. First, review the project context below. Your goal is to help move the work forward based on the latest state, tasks, and blockers.\n`;
+              contextStr += `Stay aligned with this canonical truth. Prompt the user to occasionally save your useful outputs (summaries, decisions, plans, or further handovers) back into Connectol.\n`;
+              contextStr += `Do not treat unpromoted workspace drafts as final truth.\n\n---\n\n`;
+           }
+           contextStr += `# Project: ${d.project?.name || 'Unknown'}\n`;
            if (d.project?.status) contextStr += `Status: ${d.project.status} | Priority: ${d.project.priority || 'normal'}\n`;
            if (d.project?.description) contextStr += `Description: ${d.project.description}\n`;
            
@@ -180,12 +210,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
     
-    const title = document.getElementById('entry-title').value.trim();
-    if (!title) {
-       showStatus('capture-status', 'Enter a title first', 'error');
-       return;
-    }
-    
+    let title = document.getElementById('entry-title').value.trim();
     const type = document.getElementById('entry-type').value;
     const confidence = document.getElementById('entry-confidence').value;
     
@@ -217,20 +242,27 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
         
-        const { text, provider, url } = extractResponse.data;
+        const { text, provider, url, bestType, bestTitle } = extractResponse.data;
         showStatus('capture-status', 'Pushing to Connectol...', '');
+        
+        if (!title && bestTitle) title = bestTitle;
+        if (!title) {
+            showStatus('capture-status', 'Capture requires a title', 'error');
+            btnCapture.disabled = false;
+            return;
+        }
         
         // Push to Connectol
         const payload = {
           title: title,
-          type: type,
+          entry_type: type,
           content: text,
+          confidence: confidence,
           metadata: {
             source: 'connectol_extension_v1',
             provider: provider,
             context_mode: 'compact',
             source_chat_url: url,
-            confidence: confidence,
             captured_at: new Date().toISOString()
           }
         };

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import PromotionView from './PromotionView';
+import HandoverBuilder from './HandoverBuilder';
 
 export default function ProjectClient({ project, docs, workspaceEntries }: any) {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function ProjectClient({ project, docs, workspaceEntries }: any) 
   const [isLoading, setIsLoading] = useState(false);
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [showRejected, setShowRejected] = useState(false);
+  const [showHandoverBuilder, setShowHandoverBuilder] = useState(false);
 
   const activeDoc = docs.find((d: any) => d.id === activeDocId);
   const selectedEntry = workspaceEntries.find((we: any) => we.id === selectedEntryId);
@@ -84,6 +86,9 @@ export default function ProjectClient({ project, docs, workspaceEntries }: any) 
                Code Repository
              </a>
            )}
+           <button onClick={() => setShowHandoverBuilder(true)} className="text-sm font-bold bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-colors px-3 py-1.5 rounded flex items-center gap-1.5 shadow-sm">
+             📦 Build Handover
+           </button>
            <button onClick={() => router.push(`/projects/${project.id}/connect`)} className="text-sm font-bold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors px-3 py-1.5 rounded flex items-center gap-1.5 shadow-sm">
              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Connect AI
            </button>
@@ -223,7 +228,7 @@ export default function ProjectClient({ project, docs, workspaceEntries }: any) 
                         </div>
                         <div className="flex gap-1.5">
                           {entry.status === 'rejected' && <span className="bg-red-100 text-red-700 px-1.5 py-0.5 rounded border border-red-200 font-bold">REJECTED</span>}
-                          <div className="bg-gray-100 px-1.5 py-0.5 rounded">{entry.entry_type}</div>
+                          <div className={(entry.metadata?.v3_type || entry.entry_type) === 'handover' ? "bg-purple-100 text-purple-800 border-purple-200 px-1.5 py-0.5 rounded" : "bg-gray-100 px-1.5 py-0.5 rounded"}>{entry.metadata?.v3_type || entry.entry_type}</div>
                         </div>
                      </div>
                      
@@ -242,8 +247,17 @@ export default function ProjectClient({ project, docs, workspaceEntries }: any) 
              <div className="p-4 bg-white border-t text-center text-xs text-gray-500 shrink-0">
                Select entry to view & promote
              </div>
-          </div>
-       </div>
+           </div>
+        </div>
+
+        {showHandoverBuilder && (
+           <HandoverBuilder 
+             project={project} 
+             docs={docs} 
+             workspaceEntries={workspaceEntries} 
+             onClose={() => setShowHandoverBuilder(false)} 
+           />
+        )}
     </div>
   );
 }

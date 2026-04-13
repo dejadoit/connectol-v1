@@ -32,12 +32,14 @@ async function syncConfig() {
         if (proj) {
           activeProjectName = proj.name;
           updateUIPState();
+          evaluateSessionReadiness();
         }
       }
     });
   } else {
     activeProjectName = 'SELECT PRJ';
     updateUIPState();
+    evaluateSessionReadiness();
   }
 }
 
@@ -68,8 +70,11 @@ function injectContextText(contextStr) {
   const composer = getComposer();
   if (!composer) {
     alert('Connectol V2: Could not find input composer. Ensure the page has loaded.');
-    return;
+    return false;
   }
+
+  // Actively focus to instantiate lazily-rendered textareas (e.g., ChatGPT React node mapping)
+  composer.focus();
 
   // Determine existing text
   let existingText = '';
@@ -86,19 +91,22 @@ function injectContextText(contextStr) {
     payloadStr += existingText;
   }
 
+  let finalSuccess = false;
+
   if (composer.tagName.toLowerCase() === 'textarea') {
     // React Textarea bypassing
     const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
     if (nativeInputValueSetter) {
       nativeInputValueSetter.call(composer, payloadStr);
       composer.dispatchEvent(new Event('input', { bubbles: true }));
+      finalSuccess = true;
     } else {
       composer.value = payloadStr;
       composer.dispatchEvent(new Event('input', { bubbles: true }));
+      finalSuccess = true;
     }
   } else {
     // ProseMirror / contenteditable generally requires execCommand
-    composer.focus();
     // Select all so existing text is replaced by the composite string
     document.execCommand('selectAll', false, null);
     const success = document.execCommand('insertText', false, payloadStr);
@@ -108,20 +116,32 @@ function injectContextText(contextStr) {
       navigator.clipboard.writeText(payloadStr).then(() => {
         setStatusMsg('Injection blocked. Context copied to clipboard.', 'error');
       });
+      finalSuccess = false; // Officially blocked natively
+    } else {
+      finalSuccess = true;
     }
   }
   
-  setStatusMsg('Context injected!', 'success');
+  if (finalSuccess) setStatusMsg('Context injected!', 'success');
+  return finalSuccess;
 }
 
 let stagedContextStr = null;
 
-function parseContextPayload(data) {
+function parseContextPayload(data, isHandover = false) {
   let contextStr = '';
   if (typeof data === 'string') return data;
   else if (data.markdown) return data.markdown;
   
-  contextStr = `Project: ${data.project?.name || 'Unknown'}\n`;
+  if (isHandover) {
+    contextStr += `[SYSTEM INSTRUCTION: SMART HANDOVER SESSION START]\n`;
+    contextStr += `You are assuming the role of an AI operator working on the project "${data.project?.name || 'Unknown'}".\n`;
+    contextStr += `This is a session continuation (Handover) brief. First, review the project context below. Your goal is to help move the work forward based on the latest state, tasks, and blockers.\n`;
+    contextStr += `Stay aligned with this canonical truth. Prompt the user to occasionally save your useful outputs (summaries, decisions, plans, or further handovers) back into Connectol.\n`;
+    contextStr += `Do not treat unpromoted workspace drafts as final truth.\n\n---\n\n`;
+  }
+
+  contextStr += `Project: ${data.project?.name || 'Unknown'}\n`;
   if (data.project?.description) contextStr += `Description: ${data.project.description}\n`;
   contextStr += `\n`;
   
@@ -221,33 +241,47 @@ function markSessionInjected() {
   }
 }
 
-function handleContextPull() {
+function handleContextPull(isHandover = false) {
   if (!activeProjectId) {
     setStatusMsg('Select project first', 'error');
     return;
   }
   
   if (stagedContextStr) {
-    injectContextText(stagedContextStr);
-    stagedContextStr = null;
-    markSessionInjected();
+    // If auto-pulled, we should re-apply the isHandover condition. Staged was pulled without awareness, so we just run parseContextPayload again?
+    // Wait, stagedContextStr is already parsed. We can just prepend if needed.
+    if (isHandover && stagedContextStr && !stagedContextStr.includes('SMART HANDOVER SESSION START')) {
+       let hStr = `[SYSTEM INSTRUCTION: SMART HANDOVER SESSION START]\nThis is a session continuation (Handover). Please review the context below. Aim to move the work forward.\n\n---\n\n`;
+       stagedContextStr = hStr + stagedContextStr;
+    }
+    const success = injectContextText(stagedContextStr);
+    if (success) {
+      stagedContextStr = null;
+      markSessionInjected();
+    }
     return;
   }
   
   setStatusMsg('Pulling...', '');
   const btn = document.getElementById('cn-btn-inject');
+  const btnHandover = document.getElementById('cn-btn-inject-handover');
   if (btn) btn.disabled = true;
+  if (btnHandover) btnHandover.disabled = true;
 
   chrome.runtime.sendMessage({ action: 'GET_CONTEXT', projectId: activeProjectId }, (response) => {
     if (btn) btn.disabled = false;
+    if (btnHandover) btnHandover.disabled = false;
     
     if (chrome.runtime.lastError || !response || !response.success) {
       setStatusMsg('Pull failed', 'error');
       return;
     }
     
-    injectContextText(parseContextPayload(response.data));
-    markSessionInjected();
+    const fetchedContext = parseContextPayload(response.data, isHandover);
+    const success = injectContextText(fetchedContext);
+    if (success) {
+      markSessionInjected();
+    }
   });
 }
 
@@ -292,9 +326,55 @@ function handleCaptureIntent() {
   if (!sheet) return;
   
   const titleInput = document.getElementById('cn-sheet-title');
-  const d = new Date();
-  const timeStr = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
-  titleInput.value = `${isDup ? '[DUPLICATE?] ' : ''}${provider.toUpperCase()} Reply ${timeStr}`;
+  const typeSelect = document.getElementById('cn-sheet-type');
+  
+  // -- V3 Smart Save Classifier (Heuristics) --
+  const lowerText = text.toLowerCase();
+  
+  // Determine Type
+  let bestType = 'summary'; // default
+  
+  const codeRatio = (text.match(/`/g) || []).length / text.length;
+  
+  const decisionCues = ['decision:', 'we decided', 'going forward', 'chosen direction', 'why this was chosen', 'expected benefit', 'this is the chosen direction'];
+  const isDecision = decisionCues.some(cue => lowerText.includes(cue));
+
+  if (codeRatio > 0.05 || lowerText.includes('const ') || lowerText.includes('def ')) {
+    bestType = 'snippet';
+  } else if (isDecision) {
+    bestType = 'decision';
+  } else if (lowerText.includes('next steps') || lowerText.includes('remaining tasks') || lowerText.includes('blocker') || lowerText.includes('to do')) {
+    // Distinguish between plan and handover
+    if (lowerText.includes('handoff') || lowerText.includes('continue from here') || lowerText.includes('resume')) {
+      bestType = 'handover';
+    } else {
+      bestType = 'plan';
+    }
+  }
+
+  // Determine Title
+  let bestTitle = '';
+  // Try to find the first heading
+  const headingMatch = text.match(/^#+\s+(.+)$/m);
+  if (headingMatch) {
+    bestTitle = headingMatch[1].trim();
+  } else {
+    // First substantive line up to 6 words, skipping generic AI intros
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const validLine = lines.find(l => !/^(understood|decision acknowledged|okay|ok,|i understand)/i.test(l)) || lines[0] || '';
+    if (validLine) {
+      const words = validLine.split(/\s+/);
+      bestTitle = words.slice(0, 6).join(' ') + (words.length > 6 ? '...' : '');
+    }
+  }
+  
+  if (!bestTitle || bestTitle.length < 3) {
+    const d = new Date();
+    bestTitle = `${provider.toUpperCase()} Reply ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+
+  titleInput.value = `${isDup ? '[DUPLICATE?] ' : ''}${bestTitle}`;
+  typeSelect.value = bestType;
   
   if (isDup) alert("Warning: You recently captured this exact text for this project. Save again?");
 
@@ -316,14 +396,14 @@ function executeCapture() {
 
   const payload = {
     title: title,
-    type: type,
+    entry_type: type,
     content: capturedDataCache.text,
+    confidence: conf,
     metadata: {
       source: 'connectol_extension_v2_5',
       provider: capturedDataCache.provider,
       context_mode: 'compact',
       source_chat_url: window.location.href,
-      confidence: conf,
       captured_at: new Date().toISOString()
     }
   };
@@ -412,6 +492,11 @@ function injectUI() {
       <div class="connectol-divider"></div>
 
       <!-- Action Buttons -->
+      <button class="connectol-btn" id="cn-btn-inject-handover" title="Inject handover for a new session">
+        <span class="connectol-btn-icon">📦</span>
+        Inject Handover
+      </button>
+
       <button class="connectol-btn" id="cn-btn-inject" title="Inject context into composer">
         <span class="connectol-btn-icon">⬇</span>
         Inject Context
@@ -440,6 +525,7 @@ function injectUI() {
             <option value="decision">Decision</option>
             <option value="snippet">Snippet</option>
             <option value="plan">Plan</option>
+            <option value="handover">Handover</option>
           </select>
         </div>
         <div class="connectol-sheet-input-group">
@@ -468,7 +554,8 @@ function injectUI() {
   });
 
   document.getElementById('cn-active-badge').addEventListener('click', toggleProjectList);
-  document.getElementById('cn-btn-inject').addEventListener('click', handleContextPull);
+  document.getElementById('cn-btn-inject-handover').addEventListener('click', () => handleContextPull(true));
+  document.getElementById('cn-btn-inject').addEventListener('click', () => handleContextPull(false));
   document.getElementById('cn-btn-capture').addEventListener('click', handleCaptureIntent);
   
   document.getElementById('cn-sheet-cancel').addEventListener('click', () => {
@@ -585,4 +672,43 @@ syncConfig().then(() => {
     evaluateSessionReadiness();
     observer.observe(document.body, { childList: true, subtree: true });
   }
+});
+
+// Handle messages from the extension popup
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'EXTRACT_OUTPUT') {
+    const text = findLatestResponse();
+    const provider = getProvider();
+    const url = window.location.href;
+    
+    // Heuristics
+    let bestType = 'summary';
+    let bestTitle = 'Captured Snippet';
+    if (text) {
+      const lowerText = text.toLowerCase();
+      const codeRatio = (text.match(/`/g) || []).length / text.length;
+      
+      const decisionCues = ['decision:', 'we decided', 'going forward', 'chosen direction', 'why this was chosen', 'expected benefit', 'this is the chosen direction'];
+      const isDecision = decisionCues.some(cue => lowerText.includes(cue));
+      
+      if (codeRatio > 0.05 || lowerText.includes('const ') || lowerText.includes('def ')) bestType = 'snippet';
+      else if (isDecision) bestType = 'decision';
+      else if (lowerText.includes('next steps') || lowerText.includes('remaining tasks') || lowerText.includes('blocker')) {
+        bestType = lowerText.includes('handoff') || lowerText.includes('continue from here') ? 'handover' : 'plan';
+      }
+      const headingMatch = text.match(/^#+\s+(.+)$/m);
+      if (headingMatch) bestTitle = headingMatch[1].trim();
+      else {
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const validLine = lines.find(l => !/^(understood|decision acknowledged|okay|ok,|i understand)/i.test(l)) || lines[0] || '';
+        if (validLine) {
+          const words = validLine.split(/\s+/);
+          bestTitle = words.slice(0, 6).join(' ') + (words.length > 6 ? '...' : '');
+        }
+      }
+    }
+    
+    sendResponse({ success: true, data: { text, provider, url, bestType, bestTitle } });
+  }
+  return true;
 });
