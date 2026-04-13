@@ -50,8 +50,8 @@ async function authenticateRequest(request: Request) {
     if (keyData.revoked_at) throw new Error("API key revoked");
 
     // Differentiate Extension PATs from third-party Agent keys
-    if (keyData.key_type === 'personal' || keyData.user_id) {
-       return { type: "personal", client: serviceClient, key: keyData, user: { id: keyData.user_id } };
+    if (keyData.agent_name && keyData.agent_name.startsWith('PAT:')) {
+       return { type: "personal", client: serviceClient, key: keyData, user: { id: keyData.agent_name.substring(4) } };
     }
 
     return { type: "agent", client: serviceClient, key: keyData };

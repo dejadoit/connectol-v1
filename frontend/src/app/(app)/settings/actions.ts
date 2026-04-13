@@ -21,12 +21,10 @@ export async function createPat(payload: { org_id: string, user_id: string, name
 
   const insertPayload = {
     org_id: payload.org_id,
-    user_id: payload.user_id,
     name: payload.name,
-    agent_name: 'Personal Access Token',
+    agent_name: `PAT:${user.id}`, // We embed the user ID here to identify it as a 'Personal' key without requiring a database migration
     key_hash: keyHash,
-    key_type: 'personal',
-    allowed_project_ids: null, // Global access bypass
+    allowed_project_ids: [], // Empty array natively forces Supabase Edge scripts to fall back to generic Org-Level querying
     can_read_canonical: true,
     can_read_workspace: true,
     can_write_workspace: true,

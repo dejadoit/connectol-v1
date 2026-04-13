@@ -17,9 +17,8 @@ export default async function SettingsPage() {
   // Retrieve existing personal access tokens bound to the authenticated user
   const { data: keys } = await supabase
     .from('api_keys')
-    .select('id, name, agent_name, revoked_at, last_used_at, key_hash, key_type, user_id')
-    .eq('user_id', user.id)
-    .eq('key_type', 'personal')
+    .select('id, name, agent_name, revoked_at, last_used_at, key_hash')
+    .ilike('agent_name', `PAT:${user.id}%`)
     .order('created_at', { ascending: false });
 
   return (
