@@ -1,0 +1,264 @@
+/* Connectol V2 Inline Minibar Elements */
+#connectol-v2-minibar {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(18, 18, 18, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #fff;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  user-select: none;
+}
+
+#connectol-v2-minibar.connectol-collapsed {
+  min-width: 40px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+#connectol-v2-minibar.connectol-collapsed .connectol-full-ui {
+  display: none !important;
+}
+
+.connectol-full-ui {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Base button styles */
+.connectol-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.connectol-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.connectol-btn:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.connectol-btn.primary {
+  background: #3b82f6;
+}
+
+.connectol-btn.primary:hover {
+  background: #2563eb;
+}
+
+.connectol-btn-icon {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+/* Project Badge / Dropdown */
+.connectol-project-badge {
+  background: rgba(255, 255, 255, 0.1);
+  color: #a8a8b3;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: border-color 0.2s;
+  position: relative;
+}
+
+.connectol-project-badge:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.connectol-project-switcher-dropdown {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 8px;
+  background: rgba(18, 18, 18, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 6px;
+  width: 200px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.connectol-project-switcher-dropdown.open {
+  display: flex !important;
+}
+
+.connectol-project-option {
+  padding: 8px 10px;
+  color: #ececec;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.connectol-project-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Status Indicator */
+.connectol-status {
+  font-size: 12px;
+  color: #10b981; /* Default success green */
+  margin-left: 4px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.connectol-status.show {
+  opacity: 1;
+}
+
+/* Divider */
+.connectol-divider {
+  width: 1px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Collapse Toggle */
+.connectol-collapse-toggle {
+  background: transparent;
+  border: none;
+  color: #fff;
+  opacity: 0.5;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: opacity 0.2s, background 0.2s;
+}
+.connectol-collapse-toggle:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+#connectol-v2-minibar.connectol-collapsed .connectol-collapse-toggle {
+  opacity: 0.8;
+  padding: 6px;
+}
+
+/* Confirmation Sheet */
+#connectol-v2-confirm-sheet {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  background: rgba(24, 24, 27, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  width: 300px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 999999;
+}
+
+#connectol-v2-confirm-sheet.open {
+  display: flex !important;
+}
+
+.connectol-sheet-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.connectol-sheet-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.connectol-sheet-label {
+  font-size: 11px;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.connectol-sheet-input,
+.connectol-sheet-select {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.connectol-sheet-input:focus,
+.connectol-sheet-select:focus {
+  border-color: #3b82f6;
+}
+
+.connectol-sheet-select {
+  appearance: none;
+}
+
+.connectol-sheet-row {
+  display: flex;
+  gap: 8px;
+}
+
+.connectol-sheet-row .connectol-sheet-input-group {
+  flex: 1;
+}
+
+/* Pulse Auto-Ready State */
+@keyframes connectolPulseWarning {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+.connectol-btn.auto-ready {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  animation: connectolPulseWarning 2s infinite;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.connectol-btn.auto-ready:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  animation: none;
+}
+

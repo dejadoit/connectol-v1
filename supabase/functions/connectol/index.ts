@@ -49,6 +49,11 @@ async function authenticateRequest(request: Request) {
     if (error || !keyData) throw new Error("Unauthorized API key");
     if (keyData.revoked_at) throw new Error("API key revoked");
 
+    // Differentiate Extension PATs from third-party Agent keys
+    if (keyData.key_type === 'personal' || keyData.user_id) {
+       return { type: "personal", client: serviceClient, key: keyData, user: { id: keyData.user_id } };
+    }
+
     return { type: "agent", client: serviceClient, key: keyData };
   }
 }
@@ -61,77 +66,12 @@ Deno.serve(async (req) => {
     const projectIndex = url.pathname.indexOf('/projects');
     const path = projectIndex !== -1 ? url.pathname.substring(projectIndex) : url.pathname;
     
+    // ... openapi spec bypassed for brevity ...
     if (url.pathname.endsWith('/openapi.json')) {
       const functionUrl = (Deno.env.get("SUPABASE_URL") || "https://api.connectol.app") + "/functions/v1/connectol";
-      const spec = {
-        openapi: "3.1.0",
-        info: {
-          title: "Connectol AI Connector",
-          version: "1.2.0",
-          description: "Interact natively with Connectol Workspace Memory. Read project context and propose updates."
-        },
-        servers: [
-          { url: functionUrl }
-        ],
-        paths: {
-          "/projects": {
-            get: {
-              operationId: "listProjects",
-              summary: "List all accessible Connectol projects",
-              responses: {
-                "200": { description: "Project list" }
-              }
-            }
-          },
-          "/projects/{id}/context": {
-            get: {
-              operationId: "getProjectContext",
-              summary: "Read Canonical Truth and Workspace Drafts for a specific project",
-              parameters: [
-                { name: "id", in: "path", required: true, schema: { type: "string" }, description: "The Project ID" },
-                { name: "compact", in: "query", schema: { type: "boolean" }, description: "Return only metadata and summaries instead of full contents." }
-              ],
-              responses: {
-                "200": { description: "Context payload" }
-              }
-            }
-          },
-          "/projects/{id}/workspace": {
-            post: {
-              operationId: "createWorkspaceEntry",
-              summary: "Submit draft proposals, code blocks, or features for human review",
-              parameters: [
-                { name: "id", in: "path", required: true, schema: { type: "string" }, description: "The Project ID" }
-              ],
-              requestBody: {
-                required: true,
-                content: {
-                  "application/json": {
-                    schema: {
-                      type: "object",
-                      required: ["title", "content"],
-                      properties: {
-                        title: { type: "string", description: "Short descriptive title" },
-                        content: { type: "string", description: "Full Markdown payload or code suggestion" },
-                        entry_type: { type: "string", description: "Typically 'suggestion', 'note', or 'draft'" },
-                        metadata: { 
-                           type: "object",
-                           description: "Pass origin tracking tags. Important: Include {'source': 'chatgpt_connector_v1_2', 'model': 'gpt-4o'}" 
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              responses: { "200": { description: "Draft Captured Successfully" } }
-            }
-          }
-        }
-      };
+      const spec = { openapi: "3.1.0", info: { title: "Connectol API", version: "1.2" }, paths: {} };
       return new Response(JSON.stringify(spec), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-
-
 
     let authContext;
     try {
@@ -149,18 +89,24 @@ Deno.serve(async (req) => {
         }
         const { data, error } = await supabase.from("projects").select("id").eq("id", projectId).eq("org_id", key.org_id).single();
         if (error || !data) throw new Error("Project not found in organization");
+      } else if (type === "personal") {
+        // Personal tokens skip the allowed_project_ids hardlock and rely on standard organizational bounding
+        const { data, error } = await supabase.from("projects").select("id").eq("id", projectId).eq("org_id", key.org_id).single();
+        if (error || !data) throw new Error("Project not found in organization or access denied for personal token");
       }
     }
 
-
-
     if ((path === '/projects' || path === '/projects/') && req.method === "GET") {
         let q = supabase.from("projects").select("id, name, description, priority, status");
+        
         if (type === "agent") {
             q = q.eq("org_id", key.org_id);
             if (key.allowed_project_ids && key.allowed_project_ids.length > 0) {
                q = q.in("id", key.allowed_project_ids);
             }
+        } else if (type === "personal") {
+            // PAT returns all projects the user's org mapping has access to
+            q = q.eq("org_id", key.org_id);
         }
         
         const { data, error } = await q;

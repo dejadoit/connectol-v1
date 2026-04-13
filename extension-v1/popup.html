@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Connectol V2</title>
+  <link rel="stylesheet" href="popup.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <div class="dot"></div> Connectol <span class="badge">V2</span>
+      </div>
+      <button id="btn-settings" class="icon-btn" title="Settings">⚙️</button>
+    </header>
+
+    <div id="view-main" class="view active">
+      <div class="form-group">
+        <label for="project-select">Active Project</label>
+        <div class="select-wrapper">
+          <select id="project-select">
+            <option value="">Loading projects...</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="action-box">
+        <button id="btn-pull-context" class="btn btn-primary">
+          <span class="icon">⭳</span> Pull Context to Clipboard
+        </button>
+        <div id="context-status" class="status-msg"></div>
+      </div>
+
+      <hr class="divider">
+
+      <h3>Capture Output to Workspace</h3>
+      <div class="form-group">
+        <label for="entry-title">Title</label>
+        <input type="text" id="entry-title" placeholder="e.g. Initial Auth Architecture">
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group half">
+          <label for="entry-type">Type</label>
+          <div class="select-wrapper">
+            <select id="entry-type">
+              <option value="decision">Decision</option>
+              <option value="snippet">Snippet</option>
+              <option value="summary">Summary</option>
+              <option value="plan">Plan</option>
+              <option value="issue">Issue</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group half">
+          <label for="entry-confidence">Confidence</label>
+          <div class="select-wrapper">
+            <select id="entry-confidence">
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-capture" class="btn btn-secondary">
+        <span class="icon">⭱</span> Capture & Push
+      </button>
+      <div id="capture-status" class="status-msg"></div>
+    </div>
+
+    <!-- Settings View -->
+    <div id="view-settings" class="view">
+      <h3>Configuration</h3>
+      <div class="form-group">
+        <label for="config-url">Connectol API URL</label>
+        <input type="text" id="config-url" placeholder="https://acewlqwzbjvjxssdmdlx.supabase.co/functions/v1/connectol">
+      </div>
+      <div class="form-group">
+        <label for="config-key">User Access PAT / API Key</label>
+        <input type="password" id="config-key" placeholder="Enter Access Token">
+      </div>
+      <button id="btn-save-settings" class="btn btn-primary">Save Settings</button>
+      <button id="btn-cancel-settings" class="btn btn-ghost mt-2">Cancel</button>
+      <div id="settings-status" class="status-msg"></div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
